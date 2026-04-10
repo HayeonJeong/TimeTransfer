@@ -1,0 +1,375 @@
+/* ===== Reset & Base ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface2: #22263a;
+  --border: #2e3250;
+  --text: #e8eaf6;
+  --text-muted: #8892b0;
+  --accent: #5c6bc0;
+  --accent-bright: #7986cb;
+  --hover-glow: rgba(92, 107, 192, 0.35);
+
+  /* Time-of-day colors (dark theme) */
+  --dawn:    #1a2a4a;   /* 5-8 */
+  --morning: #1e3040;   /* 8-12 */
+  --day:     #1e3530;   /* 9-17 */
+  --evening: #2e2a3a;   /* 17-21 */
+  --night:   #12121e;   /* 21-24 / 0-5 */
+
+  /* Highlight colors */
+  --hover-color: rgba(121, 134, 203, 0.55);
+  --click-color: rgba(92, 107, 192, 0.85);
+  --peer-hover-color: rgba(255, 183, 77, 0.45);
+  --peer-click-color: rgba(255, 167, 38, 0.75);
+
+  --row-height: 34px;
+  --col-width: 38px;
+  --day-col-width: 52px;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ===== Header ===== */
+header {
+  text-align: center;
+  padding: 2rem 1rem 1rem;
+  background: linear-gradient(180deg, #0a0c16 0%, var(--bg) 100%);
+}
+
+header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--accent-bright);
+}
+
+.subtitle {
+  color: var(--text-muted);
+  margin-top: 0.4rem;
+  font-size: 0.95rem;
+}
+
+/* ===== Main Layout ===== */
+main {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ===== City Section ===== */
+.city-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem 1.2rem;
+  overflow: hidden;
+}
+
+.city-selector {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.city-selector label {
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-bright);
+  min-width: 44px;
+}
+
+.search-wrapper {
+  position: relative;
+  flex: 1;
+  max-width: 360px;
+}
+
+.search-wrapper input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.85rem;
+  color: var(--text);
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.search-wrapper input:focus {
+  border-color: var(--accent);
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--surface2);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  list-style: none;
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 100;
+  display: none;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent) transparent;
+}
+
+.dropdown.open { display: block; }
+
+.dropdown li {
+  padding: 0.5rem 0.85rem;
+  cursor: pointer;
+  font-size: 0.88rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.15s;
+}
+
+.dropdown li:last-child { border-bottom: none; }
+.dropdown li:hover { background: rgba(92, 107, 192, 0.2); }
+
+.dropdown li .city-country {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.tz-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  background: var(--surface2);
+  padding: 0.3rem 0.7rem;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+/* ===== Table Wrapper ===== */
+.table-wrapper {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent) transparent;
+}
+
+.table-wrapper::-webkit-scrollbar { height: 6px; }
+.table-wrapper::-webkit-scrollbar-track { background: transparent; }
+.table-wrapper::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
+
+/* ===== Time Table ===== */
+.time-table {
+  border-collapse: collapse;
+  min-width: max-content;
+  user-select: none;
+}
+
+.time-table th,
+.time-table td {
+  border: 1px solid var(--border);
+  text-align: center;
+  vertical-align: middle;
+  font-size: 0.72rem;
+}
+
+/* Day column */
+.time-table th.day-header,
+.time-table td.day-cell {
+  width: var(--day-col-width);
+  min-width: var(--day-col-width);
+  font-weight: 600;
+  font-size: 0.75rem;
+  background: var(--surface2);
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  padding: 0 4px;
+  height: var(--row-height);
+}
+
+/* Hour header cells */
+.time-table th.hour-head {
+  width: var(--col-width);
+  min-width: var(--col-width);
+  height: 28px;
+  padding: 0 2px;
+  color: var(--text-muted);
+  font-weight: 500;
+  background: var(--surface);
+}
+
+/* Time cells */
+.time-table td.time-cell {
+  width: var(--col-width);
+  min-width: var(--col-width);
+  height: var(--row-height);
+  cursor: crosshair;
+  transition: background-color 0.1s;
+  position: relative;
+}
+
+/* ===== Time-of-day background ===== */
+.time-cell.t-night   { background-color: var(--night); }
+.time-cell.t-dawn    { background-color: var(--dawn); }
+.time-cell.t-morning { background-color: var(--morning); }
+.time-cell.t-day     { background-color: var(--day); }
+.time-cell.t-evening { background-color: var(--evening); }
+
+/* Hour label inside cell */
+.time-cell .hour-label {
+  display: none;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* ===== Highlight States ===== */
+
+/* Hovered source cell */
+.time-cell.hover-src {
+  background-color: var(--hover-color) !important;
+  outline: 2px solid rgba(121, 134, 203, 0.9);
+  outline-offset: -2px;
+  z-index: 1;
+}
+
+/* Peer (other table) hover highlight */
+.time-cell.hover-peer {
+  background-color: var(--peer-hover-color) !important;
+  outline: 2px solid rgba(255, 183, 77, 0.9);
+  outline-offset: -2px;
+  z-index: 1;
+}
+
+/* Clicked (locked) source cell */
+.time-cell.click-src {
+  background-color: var(--click-color) !important;
+  outline: 2px solid #7986cb;
+  outline-offset: -2px;
+  z-index: 1;
+}
+
+/* Peer click highlight */
+.time-cell.click-peer {
+  background-color: var(--peer-click-color) !important;
+  outline: 2px solid #ffa726;
+  outline-offset: -2px;
+  z-index: 1;
+}
+
+/* Show label on highlight */
+.time-cell.hover-src .hour-label,
+.time-cell.hover-peer .hour-label,
+.time-cell.click-src .hour-label,
+.time-cell.click-peer .hour-label {
+  display: block;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.72rem;
+}
+
+/* Weekend rows */
+.time-table tr.weekend td.day-cell {
+  color: #ef9a9a;
+}
+
+/* ===== Info Panel ===== */
+.info-panel {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.7rem 1.2rem;
+  text-align: center;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.info-panel span { transition: all 0.2s; }
+
+/* ===== Ads ===== */
+.ad-container {
+  width: 100%;
+  min-height: 90px;
+  background: var(--surface2);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.ad-top    { margin: 0.5rem auto; max-width: 1400px; padding: 0 1rem; }
+.ad-middle { max-width: 1400px; margin: 0 auto; }
+.ad-bottom { margin: 0.5rem auto; max-width: 1400px; padding: 0 1rem; }
+
+/* ===== Footer ===== */
+footer {
+  text-align: center;
+  padding: 1.5rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  border-top: 1px solid var(--border);
+  margin-top: 1rem;
+}
+
+/* ===== Legend ===== */
+.legend {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.6rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.legend-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 600px) {
+  header h1 { font-size: 1.5rem; }
+  :root {
+    --col-width: 30px;
+    --day-col-width: 42px;
+    --row-height: 28px;
+  }
+  .time-cell .hour-label { font-size: 0.6rem; }
+  .city-selector { gap: 0.5rem; }
+}
