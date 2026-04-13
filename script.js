@@ -1,7 +1,7 @@
 // ===== Constants =====
 const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const DAYS_FULL  = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const HOURS = Array.from({ length: 16 }, (_, i) => i);  // 00:00–15:00
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
 function getTimeClass(h) {
   if (h < 5)  return 't-night';
@@ -319,8 +319,8 @@ function init() {
   setupTableEvents(t2, t1, () => state.city2?.tz, () => state.city1?.tz);
 
   // Defaults
-  const defaultC1 = CITIES.find(c => c.name === 'Seoul');
-  const defaultC2 = CITIES.find(c => c.name === 'Los Angeles');
+  const defaultC1 = CITIES.find(c => c.name === 'Los Angeles');
+  const defaultC2 = CITIES.find(c => c.name === 'Seoul');
   if (defaultC1) selectCity(defaultC1, 1, document.getElementById('city1-input'), document.getElementById('city1-dropdown'), document.getElementById('city1-tz'));
   if (defaultC2) selectCity(defaultC2, 2, document.getElementById('city2-input'), document.getElementById('city2-dropdown'), document.getElementById('city2-tz'));
 }
