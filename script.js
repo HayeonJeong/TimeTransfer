@@ -221,38 +221,65 @@ function selectCity(city, cityIndex, input, dropdown, tzLabel) {
 }
 
 // ===== Wire Table Events =====
-// drag state (shared across all tables)
-const drag = { active: false, addMode: true, visited: new Set() };
+const drag = { active: false, addMode: true, startDay: null, startHour: null, tableEl: null };
 
-function togglePin(day, hour, source) {
-  const idx = state.pinned.findIndex(p => p.day === day && p.hour === hour && p.source === source);
-  if (idx !== -1) { state.pinned.splice(idx, 1); return false; }
-  state.pinned.push({ day, hour, source });
-  return true;
+function getDragRect(curDay, curHour) {
+  return {
+    minDay:  Math.min(drag.startDay,  curDay),
+    maxDay:  Math.max(drag.startDay,  curDay),
+    minHour: Math.min(drag.startHour, curHour),
+    maxHour: Math.max(drag.startHour, curHour),
+  };
+}
+
+function applyDragPreview(curDay, curHour) {
+  const tableEl = drag.tableEl;
+  tableEl.querySelectorAll('.drag-preview').forEach(el => el.classList.remove('drag-preview'));
+  const { minDay, maxDay, minHour, maxHour } = getDragRect(curDay, curHour);
+  for (let d = minDay; d <= maxDay; d++)
+    for (let h = minHour; h <= maxHour; h++) {
+      const cell = getCell(tableEl, d, h);
+      if (cell) cell.classList.add('drag-preview');
+    }
+}
+
+function commitDragRect(curDay, curHour, source) {
+  const { minDay, maxDay, minHour, maxHour } = getDragRect(curDay, curHour);
+  for (let d = minDay; d <= maxDay; d++) {
+    for (let h = minHour; h <= maxHour; h++) {
+      const idx = state.pinned.findIndex(p => p.day === d && p.hour === h && p.source === source);
+      if (drag.addMode && idx === -1) state.pinned.push({ day: d, hour: h, source });
+      if (!drag.addMode && idx !== -1) state.pinned.splice(idx, 1);
+    }
+  }
+}
+
+function endDrag(curDay, curHour, source) {
+  if (!drag.active) return;
+  if (drag.tableEl) {
+    drag.tableEl.querySelectorAll('.drag-preview').forEach(el => el.classList.remove('drag-preview'));
+    if (curDay !== null) commitDragRect(curDay, curHour, source);
+  }
+  drag.active = false;
+  drag.tableEl = null;
+  applyAllPinned();
 }
 
 function setupTableEvents(tableEl, peerTableEl, getMyTZ, getPeerTZ) {
   const source = tableEl.id === 'table-city1' ? 1 : 2;
 
-  // ---- Hover ----
+  // ---- Hover (no drag) ----
   tableEl.addEventListener('mouseover', (e) => {
     const cell = e.target.closest('.time-cell');
-    if (!cell || !getMyTZ() || !getPeerTZ()) return;
+    if (!cell) return;
 
-    // Drag: paint cells as mouse moves
-    if (drag.active) {
-      const key = `${cell.dataset.day}-${cell.dataset.hour}`;
-      if (!drag.visited.has(key)) {
-        drag.visited.add(key);
-        const idx = state.pinned.findIndex(p => p.day === +cell.dataset.day && p.hour === +cell.dataset.hour && p.source === source);
-        if (drag.addMode && idx === -1) state.pinned.push({ day: +cell.dataset.day, hour: +cell.dataset.hour, source });
-        if (!drag.addMode && idx !== -1) state.pinned.splice(idx, 1);
-        applyAllPinned();
-      }
+    if (drag.active && drag.tableEl === tableEl) {
+      applyDragPreview(+cell.dataset.day, +cell.dataset.hour);
       return;
     }
 
-    applyHover(+cell.dataset.day, +cell.dataset.hour, tableEl, peerTableEl, getMyTZ(), getPeerTZ());
+    if (!drag.active && getMyTZ() && getPeerTZ())
+      applyHover(+cell.dataset.day, +cell.dataset.hour, tableEl, peerTableEl, getMyTZ(), getPeerTZ());
   });
 
   tableEl.addEventListener('mouseleave', () => {
@@ -262,38 +289,35 @@ function setupTableEvents(tableEl, peerTableEl, getMyTZ, getPeerTZ) {
     restoreInfoPanel();
   });
 
-  // ---- Mouse Down: start drag ----
+  // ---- Mouse Down: start rectangular drag ----
   tableEl.addEventListener('mousedown', (e) => {
     const cell = e.target.closest('.time-cell');
     if (!cell || !getMyTZ() || !getPeerTZ()) return;
-    e.preventDefault(); // prevent text selection
+    e.preventDefault();
 
     const day  = +cell.dataset.day;
     const hour = +cell.dataset.hour;
-    const key  = `${day}-${hour}`;
-
     const alreadyPinned = state.pinned.some(p => p.day === day && p.hour === hour && p.source === source);
-    drag.addMode = !alreadyPinned;
-    drag.active  = true;
-    drag.visited = new Set([key]);
 
-    if (drag.addMode) state.pinned.push({ day, hour, source });
-    else state.pinned.splice(state.pinned.findIndex(p => p.day === day && p.hour === hour && p.source === source), 1);
+    drag.active    = true;
+    drag.addMode   = !alreadyPinned;
+    drag.startDay  = day;
+    drag.startHour = hour;
+    drag.tableEl   = tableEl;
 
-    applyAllPinned();
+    applyDragPreview(day, hour);
   });
 
-  // ---- Mouse Up: end drag ----
-  tableEl.addEventListener('mouseup', () => {
-    drag.active = false;
-    drag.visited.clear();
+  // ---- Mouse Up: commit rectangle ----
+  tableEl.addEventListener('mouseup', (e) => {
+    const cell = e.target.closest('.time-cell');
+    endDrag(cell ? +cell.dataset.day : drag.startDay, cell ? +cell.dataset.hour : drag.startHour, source);
   });
 }
 
-// End drag anywhere on the page
+// Safety: end drag if mouse released outside table
 document.addEventListener('mouseup', () => {
-  drag.active = false;
-  drag.visited.clear();
+  if (drag.active) endDrag(drag.startDay, drag.startHour, drag.tableEl?.id === 'table-city1' ? 1 : 2);
 });
 
 function restoreInfoPanel() {

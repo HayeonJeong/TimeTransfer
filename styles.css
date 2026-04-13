@@ -345,6 +345,18 @@ main {
 .time-cell.t-day     { background-color: var(--day); }
 .time-cell.t-evening { background-color: var(--evening); }
 
+/* ===== Drag Preview ===== */
+.time-cell.drag-preview {
+  background-color: rgba(74, 95, 193, 0.2) !important;
+  outline: 1px dashed var(--accent);
+  outline-offset: -1px;
+  z-index: 1;
+}
+
+[data-theme="dark"] .time-cell.drag-preview {
+  background-color: rgba(121, 134, 203, 0.25) !important;
+}
+
 /* ===== Current Time ===== */
 .time-cell.current-time {
   outline: 2px solid #e53935;
