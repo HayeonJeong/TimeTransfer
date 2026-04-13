@@ -217,6 +217,7 @@ function selectCity(city, cityIndex, input, dropdown, tzLabel) {
   if (state.city1 && state.city2) applyAllPinned();
 
   document.getElementById('info-text').textContent = 'Hover over the grid to compare times';
+  updateCurrentTime();
 }
 
 // ===== Wire Table Events =====
@@ -325,6 +326,40 @@ function init() {
   if (defaultC2) selectCity(defaultC2, 2, document.getElementById('city2-input'), document.getElementById('city2-dropdown'), document.getElementById('city2-tz'));
 }
 
+// ===== Current Time Highlight =====
+function getCurrentDayHour(tz) {
+  const now = new Date();
+  const fmt = new Intl.DateTimeFormat('en-CA', {
+    timeZone: tz,
+    weekday: 'short', hour: '2-digit', hour12: false
+  });
+  const parts = fmt.formatToParts(now);
+  const weekday = parts.find(p => p.type === 'weekday').value; // Mon, Tue...
+  const hour = parseInt(parts.find(p => p.type === 'hour').value) % 24;
+  const dayMap = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  return { day: dayMap[weekday], hour };
+}
+
+function updateCurrentTime() {
+  const t1 = document.getElementById('table-city1');
+  const t2 = document.getElementById('table-city2');
+
+  [t1, t2].forEach(t => {
+    t.querySelectorAll('.current-time').forEach(el => el.classList.remove('current-time'));
+  });
+
+  if (state.city1) {
+    const { day, hour } = getCurrentDayHour(state.city1.tz);
+    const cell = getCell(t1, day, hour);
+    if (cell) cell.classList.add('current-time');
+  }
+  if (state.city2) {
+    const { day, hour } = getCurrentDayHour(state.city2.tz);
+    const cell = getCell(t2, day, hour);
+    if (cell) cell.classList.add('current-time');
+  }
+}
+
 // ===== Theme Toggle =====
 function initTheme() {
   const btn = document.getElementById('theme-toggle');
@@ -341,4 +376,10 @@ function initTheme() {
   });
 }
 
-document.addEventListener('DOMContentLoaded', () => { init(); initTheme(); });
+document.addEventListener('DOMContentLoaded', () => {
+  init();
+  initTheme();
+  updateCurrentTime();
+  // Refresh every minute
+  setInterval(updateCurrentTime, 60000);
+});
