@@ -205,11 +205,10 @@ function selectCity(city, cityIndex, input, dropdown, tzLabel) {
   input.value = city.name;
   dropdown.classList.remove('open');
 
-  const off = getOffsetFromTZ(city.tz);
-  const sign = off >= 0 ? '+' : '';
-  const h = Math.trunc(off);
-  const m = Math.abs(Math.round((off % 1) * 60));
-  tzLabel.textContent = m ? `UTC${sign}${h}:${String(m).padStart(2,'0')}` : `UTC${sign}${h}`;
+  const abbr = new Intl.DateTimeFormat('en-US', {
+    timeZone: city.tz, timeZoneName: 'short'
+  }).formatToParts(new Date()).find(p => p.type === 'timeZoneName').value;
+  tzLabel.textContent = abbr;
 
   if (cityIndex === 1) state.city1 = city;
   else state.city2 = city;
