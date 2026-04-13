@@ -13,19 +13,14 @@ function getTimeClass(h) {
 }
 
 function formatHour(h) {
-  if (h === 0)  return '12 AM';
-  if (h < 12)   return `${h} AM`;
-  if (h === 12) return '12 PM';
-  return `${h - 12} PM`;
+  return `${String(h).padStart(2, '0')}:00`;
 }
 
 // ===== State =====
 const state = {
   city1: null,
   city2: null,
-  clickDay: null,
-  clickHour: null,
-  clickSource: null
+  pinned: []  // [{ day, hour, source }]  — multiple selections
 };
 
 // ===== Get UTC offset in hours for an IANA timezone =====
@@ -125,19 +120,27 @@ function applyHover(srcDay, srcHour, srcTableEl, dstTableEl, srcTZ, dstTZ) {
   updateInfoPanel(srcDay, srcHour, srcTZ, dstDay, dstHour, dstTZ);
 }
 
-// ===== Click highlight =====
-function applyClick(srcDay, srcHour, srcTableEl, dstTableEl, srcTZ, dstTZ) {
-  clearHighlights(srcTableEl, ['click-src', 'click-peer']);
-  clearHighlights(dstTableEl, ['click-src', 'click-peer']);
+// ===== Re-render all pinned highlights =====
+function applyAllPinned() {
+  const t1 = document.getElementById('table-city1');
+  const t2 = document.getElementById('table-city2');
+  clearHighlights(t1, ['click-src', 'click-peer']);
+  clearHighlights(t2, ['click-src', 'click-peer']);
+  if (!state.city1 || !state.city2) return;
 
-  const srcCell = getCell(srcTableEl, srcDay, srcHour);
-  if (srcCell) srcCell.classList.add('click-src');
+  state.pinned.forEach(({ day, hour, source }) => {
+    const srcTable = source === 1 ? t1 : t2;
+    const dstTable = source === 1 ? t2 : t1;
+    const srcTZ    = source === 1 ? state.city1.tz : state.city2.tz;
+    const dstTZ    = source === 1 ? state.city2.tz : state.city1.tz;
 
-  if (!dstTZ) return;
+    const srcCell = getCell(srcTable, day, hour);
+    if (srcCell) srcCell.classList.add('click-src');
 
-  const { day: dstDay, hour: dstHour } = mapTime(srcDay, srcHour, srcTZ, dstTZ);
-  const dstCell = getCell(dstTableEl, dstDay, dstHour);
-  if (dstCell) dstCell.classList.add('click-peer');
+    const { day: dDay, hour: dHour } = mapTime(day, hour, srcTZ, dstTZ);
+    const dstCell = getCell(dstTable, dDay, dHour);
+    if (dstCell) dstCell.classList.add('click-peer');
+  });
 }
 
 // ===== Info Panel =====
@@ -211,13 +214,8 @@ function selectCity(city, cityIndex, input, dropdown, tzLabel) {
   if (cityIndex === 1) state.city1 = city;
   else state.city2 = city;
 
-  // Re-apply locked selection after city change
-  if (state.clickDay !== null && state.city1 && state.city2) {
-    const t1 = document.getElementById('table-city1');
-    const t2 = document.getElementById('table-city2');
-    if (state.clickSource === 1) applyClick(state.clickDay, state.clickHour, t1, t2, state.city1.tz, state.city2.tz);
-    else applyClick(state.clickDay, state.clickHour, t2, t1, state.city2.tz, state.city1.tz);
-  }
+  // Re-apply all pinned selections after city change
+  if (state.city1 && state.city2) applyAllPinned();
 
   document.getElementById('info-text').textContent = 'Hover over the grid to compare times';
 }
@@ -240,38 +238,37 @@ function setupTableEvents(tableEl, peerTableEl, getMyTZ, getPeerTZ) {
     const cell = e.target.closest('.time-cell');
     if (!cell || !getMyTZ() || !getPeerTZ()) return;
 
-    const day  = +cell.dataset.day;
-    const hour = +cell.dataset.hour;
-    const myIndex = tableEl.id === 'table-city1' ? 1 : 2;
+    const day     = +cell.dataset.day;
+    const hour    = +cell.dataset.hour;
+    const source  = tableEl.id === 'table-city1' ? 1 : 2;
 
-    if (state.clickDay === day && state.clickHour === hour && state.clickSource === myIndex) {
-      state.clickDay = state.clickHour = state.clickSource = null;
-      clearHighlights(tableEl,     ['click-src', 'click-peer']);
-      clearHighlights(peerTableEl, ['click-src', 'click-peer']);
-      return;
+    // Toggle: remove if already pinned, add if not
+    const idx = state.pinned.findIndex(p => p.day === day && p.hour === hour && p.source === source);
+    if (idx !== -1) {
+      state.pinned.splice(idx, 1);
+    } else {
+      state.pinned.push({ day, hour, source });
     }
 
-    state.clickDay    = day;
-    state.clickHour   = hour;
-    state.clickSource = myIndex;
-    applyClick(day, hour, tableEl, peerTableEl, getMyTZ(), getPeerTZ());
+    applyAllPinned();
   });
 }
 
 function restoreInfoPanel() {
-  if (state.clickDay !== null && state.city1 && state.city2) {
-    const t1 = document.getElementById('table-city1');
-    const t2 = document.getElementById('table-city2');
-    if (state.clickSource === 1) {
-      const { day: d2, hour: h2 } = mapTime(state.clickDay, state.clickHour, state.city1.tz, state.city2.tz);
-      updateInfoPanel(state.clickDay, state.clickHour, state.city1.tz, d2, h2, state.city2.tz);
-    } else {
-      const { day: d1, hour: h1 } = mapTime(state.clickDay, state.clickHour, state.city2.tz, state.city1.tz);
-      updateInfoPanel(state.clickDay, state.clickHour, state.city2.tz, d1, h1, state.city1.tz);
+  const info = document.getElementById('info-text');
+  if (state.pinned.length > 0 && state.city1 && state.city2) {
+    const last = state.pinned[state.pinned.length - 1];
+    const srcTZ = last.source === 1 ? state.city1.tz : state.city2.tz;
+    const dstTZ = last.source === 1 ? state.city2.tz : state.city1.tz;
+    const { day: dDay, hour: dHour } = mapTime(last.day, last.hour, srcTZ, dstTZ);
+    updateInfoPanel(last.day, last.hour, srcTZ, dDay, dHour, dstTZ);
+    if (state.pinned.length > 1) {
+      info.innerHTML += ` &nbsp;<span style="color:var(--text-muted);font-size:0.8em">(+${state.pinned.length - 1} more pinned)</span>`;
     }
   } else {
-    document.getElementById('info-text').textContent =
-      state.city1 && state.city2 ? 'Hover over the grid to compare times' : 'Select two cities, then hover over the grid';
+    info.textContent = state.city1 && state.city2
+      ? 'Hover over the grid to compare times'
+      : 'Select two cities, then hover over the grid';
   }
 }
 
