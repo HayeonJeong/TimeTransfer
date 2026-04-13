@@ -209,9 +209,6 @@ main {
 /* ===== Table Wrapper ===== */
 .table-wrapper {
   overflow-x: auto;
-  overflow-y: auto;
-  /* header(28px) + 16 rows 00:00–15:00 (34px each) = 572px */
-  max-height: calc(28px + 16 * var(--cell-size));
   scrollbar-width: thin;
   scrollbar-color: var(--accent) transparent;
 }

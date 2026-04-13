@@ -1,7 +1,7 @@
 // ===== Constants =====
 const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const DAYS_FULL  = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const HOURS = Array.from({ length: 24 }, (_, i) => i);
+const HOURS = Array.from({ length: 16 }, (_, i) => i);  // 00:00–15:00
 
 function getTimeClass(h) {
   if (h < 5)  return 't-night';
