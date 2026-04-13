@@ -31,6 +31,41 @@
   --hour-col-width: 58px;
 }
 
+/* ===== Dark Mode Variables ===== */
+[data-theme="dark"] {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface2: #22263a;
+  --border: #2e3250;
+  --text: #e8eaf6;
+  --text-muted: #8892b0;
+  --accent: #5c6bc0;
+  --accent-bright: #7986cb;
+
+  --night:   #12121e;
+  --dawn:    #1a2a4a;
+  --morning: #1e3040;
+  --day:     #1e3530;
+  --evening: #2e2a3a;
+
+  --hover-color:      rgba(121, 134, 203, 0.55);
+  --click-color:      rgba(92,  107, 192, 0.85);
+  --peer-hover-color: rgba(255, 183,  77, 0.45);
+  --peer-click-color: rgba(255, 167,  38, 0.75);
+}
+
+[data-theme="dark"] header {
+  background: linear-gradient(180deg, #0a0c16 0%, var(--bg) 100%);
+}
+
+[data-theme="dark"] .ad-container {
+  background: #1e2235;
+}
+
+[data-theme="dark"] footer {
+  background: var(--surface2);
+}
+
 html, body {
   width: 100%;
   height: 100%;
@@ -49,6 +84,26 @@ header {
   padding: 1.4rem 1rem 0.8rem;
   background: linear-gradient(180deg, #dde3f5 0%, var(--bg) 100%);
   border-bottom: 1px solid var(--border);
+  position: relative;
+}
+
+.theme-toggle {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.3rem 0.6rem;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  line-height: 1;
+}
+
+.theme-toggle:hover {
+  background: var(--border);
+  transform: scale(1.1);
 }
 
 header h1 {

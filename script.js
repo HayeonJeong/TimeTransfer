@@ -325,4 +325,20 @@ function init() {
   if (defaultC2) selectCity(defaultC2, 2, document.getElementById('city2-input'), document.getElementById('city2-dropdown'), document.getElementById('city2-tz'));
 }
 
-document.addEventListener('DOMContentLoaded', init);
+// ===== Theme Toggle =====
+function initTheme() {
+  const btn = document.getElementById('theme-toggle');
+  const saved = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', saved);
+  btn.textContent = saved === 'dark' ? '☀️' : '🌙';
+
+  btn.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    btn.textContent = next === 'dark' ? '☀️' : '🌙';
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => { init(); initTheme(); });
