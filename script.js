@@ -221,38 +221,80 @@ function selectCity(city, cityIndex, input, dropdown, tzLabel) {
 }
 
 // ===== Wire Table Events =====
+// drag state (shared across all tables)
+const drag = { active: false, addMode: true, visited: new Set() };
+
+function togglePin(day, hour, source) {
+  const idx = state.pinned.findIndex(p => p.day === day && p.hour === hour && p.source === source);
+  if (idx !== -1) { state.pinned.splice(idx, 1); return false; }
+  state.pinned.push({ day, hour, source });
+  return true;
+}
+
 function setupTableEvents(tableEl, peerTableEl, getMyTZ, getPeerTZ) {
+  const source = tableEl.id === 'table-city1' ? 1 : 2;
+
+  // ---- Hover ----
   tableEl.addEventListener('mouseover', (e) => {
     const cell = e.target.closest('.time-cell');
     if (!cell || !getMyTZ() || !getPeerTZ()) return;
+
+    // Drag: paint cells as mouse moves
+    if (drag.active) {
+      const key = `${cell.dataset.day}-${cell.dataset.hour}`;
+      if (!drag.visited.has(key)) {
+        drag.visited.add(key);
+        const idx = state.pinned.findIndex(p => p.day === +cell.dataset.day && p.hour === +cell.dataset.hour && p.source === source);
+        if (drag.addMode && idx === -1) state.pinned.push({ day: +cell.dataset.day, hour: +cell.dataset.hour, source });
+        if (!drag.addMode && idx !== -1) state.pinned.splice(idx, 1);
+        applyAllPinned();
+      }
+      return;
+    }
+
     applyHover(+cell.dataset.day, +cell.dataset.hour, tableEl, peerTableEl, getMyTZ(), getPeerTZ());
   });
 
   tableEl.addEventListener('mouseleave', () => {
+    if (drag.active) return;
     clearHighlights(tableEl,     ['hover-src']);
     clearHighlights(peerTableEl, ['hover-peer']);
     restoreInfoPanel();
   });
 
-  tableEl.addEventListener('click', (e) => {
+  // ---- Mouse Down: start drag ----
+  tableEl.addEventListener('mousedown', (e) => {
     const cell = e.target.closest('.time-cell');
     if (!cell || !getMyTZ() || !getPeerTZ()) return;
+    e.preventDefault(); // prevent text selection
 
-    const day     = +cell.dataset.day;
-    const hour    = +cell.dataset.hour;
-    const source  = tableEl.id === 'table-city1' ? 1 : 2;
+    const day  = +cell.dataset.day;
+    const hour = +cell.dataset.hour;
+    const key  = `${day}-${hour}`;
 
-    // Toggle: remove if already pinned, add if not
-    const idx = state.pinned.findIndex(p => p.day === day && p.hour === hour && p.source === source);
-    if (idx !== -1) {
-      state.pinned.splice(idx, 1);
-    } else {
-      state.pinned.push({ day, hour, source });
-    }
+    const alreadyPinned = state.pinned.some(p => p.day === day && p.hour === hour && p.source === source);
+    drag.addMode = !alreadyPinned;
+    drag.active  = true;
+    drag.visited = new Set([key]);
+
+    if (drag.addMode) state.pinned.push({ day, hour, source });
+    else state.pinned.splice(state.pinned.findIndex(p => p.day === day && p.hour === hour && p.source === source), 1);
 
     applyAllPinned();
   });
+
+  // ---- Mouse Up: end drag ----
+  tableEl.addEventListener('mouseup', () => {
+    drag.active = false;
+    drag.visited.clear();
+  });
 }
+
+// End drag anywhere on the page
+document.addEventListener('mouseup', () => {
+  drag.active = false;
+  drag.visited.clear();
+});
 
 function restoreInfoPanel() {
   const info = document.getElementById('info-text');
